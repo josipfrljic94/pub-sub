@@ -1,3 +1,16 @@
-h1, p {
+h1,
+p {
   font-family: Lato;
+}
+
+.container {
+  display: flex;
+  justify-content: flex-start;
+  margin-left: -10px;
+}
+
+.card {
+  flex: 0.5;
+  height: 300px;
+  border: 1px solid grey;
 }

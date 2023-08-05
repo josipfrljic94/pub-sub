@@ -4,32 +4,8 @@ import PubSub from './pubsub';
 import PokemonService from './pokemons.service';
 import { IPokemon } from './pokemon.interface';
 
-function Publisher() {
-  let count = 0;
-  const handleClick = () => {
-    PubSub.publish('buttonClicked', 'Button in Publisher component clicked!');
-  };
-
-  return (
-    <div>
-      <button onClick={handleClick}>Click Me {count}</button>
-    </div>
-  );
-}
-
 function Subscriber() {
-  const [message, setMessage] = React.useState('');
   const [count, setCount] = React.useState(0);
-
-  React.useEffect(() => {
-    const subscription = PubSub.subscribe('buttonClicked', (data) => {
-      setMessage(data);
-    });
-
-    return () => {
-      PubSub.unsubscribe(subscription); // Don't forget to unsubscribe when the component unmounts
-    };
-  }, []);
 
   React.useEffect(() => {
     const subscription = PubSub.subscribe('counterChanged', (newCount) => {
@@ -43,8 +19,7 @@ function Subscriber() {
 
   return (
     <div>
-      <p>Message from Publisher: {message}</p>
-      <h1>Counter : {count}</h1>
+      <h1>Pokemons number + Counter : {count}</h1>
     </div>
   );
 }
@@ -52,7 +27,6 @@ function Subscriber() {
 function App() {
   return (
     <div>
-      <Publisher />
       <Subscriber />
       <Counter />
       <Pokemons />
@@ -71,30 +45,29 @@ function Counter() {
     PubSub.publish('counterChanged', count + 1);
   };
 
-  // React.useEffect(() => {
-  //   const subscription = PubSub.subscribe('counterChanged', (newCount) => {
-  //     setCount(newCount);
-  //   });
+  React.useEffect(() => {
+    const subscription = PubSub.subscribe('counterChanged', (newCount) => {
+      setCount(newCount);
+    });
 
-  //   return () => {
-  //     PubSub.unsubscribe('counterChanged', subscription);
-  //   };
-  // }, []);
+    return () => {
+      PubSub.unsubscribe('counterChanged', subscription);
+    };
+  }, []);
 
   return (
     <div>
-      {/* <p>Counter: {count}</p> */}
       <button onClick={increment}>Increment</button>
     </div>
   );
 }
-// fetch('https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0')
+
 const Pokemons = () => {
   const [pokemons, setPokemons] = React.useState([]);
   const [isLoading, setLoading] = React.useState(true);
   const [filterTerm, setFilterTerm] = React.useState('');
   React.useEffect(() => {
-    fetch('https://pokeapi.co/api/v2/pokemon')
+    fetch('https://pokeapi.co/api/v2/pokemon?limit=1000&offset=0')
       .then((data) => data.json())
       .then(({ results }) => {
         setPokemons(PokemonService.filterAndSort(results, filterTerm));
@@ -128,6 +101,7 @@ const PokemonReceiver = () => {
   React.useEffect(() => {
     const subscription = PubSub.subscribe('pokemons', (pokemons) => {
       setPokemons(pokemons);
+      PubSub.publish('counterChanged', pokemons.length);
     });
 
     return () => {
@@ -155,16 +129,14 @@ const PokemonReceiver = () => {
 
   return (
     <div>
-      <h1>Subscribed pokemons</h1>
-      {/* {pokemons.map(({ name }) => (
-        <h1 key={name}>{name}</h1>
-      ))} */}
-      {fullPokemons.map(({ sprites, name }) => (
-        <div>
-          <img src={sprites.front_default} />
-          <h1>{name}</h1>
-        </div>
-      ))}
+      <div className="container">
+        {fullPokemons.map(({ sprites, name }) => (
+          <div className="card">
+            <img src={sprites.front_default} />
+            <h1>{name}</h1>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
