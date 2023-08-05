@@ -1,4 +1,4 @@
-export interface Root {
+export interface IPokemon {
   abilities: Ability[];
   base_experience: number;
   forms: Form[];

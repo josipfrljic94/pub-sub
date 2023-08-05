@@ -2,6 +2,7 @@ import * as React from 'react';
 import './style.css';
 import PubSub from './pubsub';
 import PokemonService from './pokemons.service';
+import { IPokemon } from './pokemon.interface';
 
 function Publisher() {
   let count = 0;
@@ -87,13 +88,13 @@ function Counter() {
     </div>
   );
 }
-
+// fetch('https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0')
 const Pokemons = () => {
   const [pokemons, setPokemons] = React.useState([]);
   const [isLoading, setLoading] = React.useState(true);
   const [filterTerm, setFilterTerm] = React.useState('');
   React.useEffect(() => {
-    fetch('https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0')
+    fetch('https://pokeapi.co/api/v2/pokemon')
       .then((data) => data.json())
       .then(({ results }) => {
         setPokemons(PokemonService.filterAndSort(results, filterTerm));
@@ -104,6 +105,8 @@ const Pokemons = () => {
   React.useEffect(() => {
     PubSub.publish('pokemons', pokemons);
   }, [pokemons, filterTerm]);
+
+  console.log({ pokemons });
 
   if (isLoading) return <h1>Loading...</h1>;
   return (
@@ -120,7 +123,7 @@ const Pokemons = () => {
 
 const PokemonReceiver = () => {
   const [pokemons, setPokemons] = React.useState([]);
-  const [fullPokemons, setFullPokemons] = React.useState([]);
+  const [fullPokemons, setFullPokemons] = React.useState<IPokemon[]>([]);
 
   React.useEffect(() => {
     const subscription = PubSub.subscribe('pokemons', (pokemons) => {
@@ -133,20 +136,34 @@ const PokemonReceiver = () => {
   }, []);
 
   React.useEffect(() => {
-    setFullPokemons(
-      pokemons.map(({ url }) => {
-        fetch(url).then((data) => data.json());
-      })
-    );
+    if (pokemons.length === 0) return;
+
+    const fetchFullPokemons = async () => {
+      const pokemonDetailsPromises = pokemons.map(({ url }) => {
+        return fetch(url).then((data) => data.json());
+      });
+
+      const fullPokemonData = await Promise.all(pokemonDetailsPromises);
+      // console.log(fullPokemonData, 'data');
+      setFullPokemons(fullPokemonData);
+    };
+
+    fetchFullPokemons();
   }, [pokemons]);
 
-  console.log(fullPokemons, pokemons);
+  // console.log(fullPokemons);
 
   return (
     <div>
       <h1>Subscribed pokemons</h1>
-      {pokemons.map(({ name }) => (
+      {/* {pokemons.map(({ name }) => (
         <h1 key={name}>{name}</h1>
+      ))} */}
+      {fullPokemons.map(({ sprites, name }) => (
+        <div>
+          <img src={sprites.front_default} />
+          <h1>{name}</h1>
+        </div>
       ))}
     </div>
   );
